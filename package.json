@@ -1,0 +1,11 @@
+{
+  "name": "arcreactor",
+  "version": "0.0.1",
+  "description": "An JavaScript implementation of a Reactor",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Samuel Holmes",
+  "license": "MIT"
+}
