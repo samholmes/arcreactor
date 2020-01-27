@@ -8,15 +8,29 @@ export default class Reactor {
 	}
 
 	/**
-	 * A static method that returns the tracked array while deleting the static
-	 * property.
+	 * Trackers are a way of tracking ancestor reactors when invoking a reactors
+	 * expression function.
 	 *
-	 * @return {array} - An array of tracked reactors.
+	 * The trackers array is a stack of trackers. Each tracker is an array of
+	 * reactors. When track() is invoked a reactor is pushed into the tracker at
+	 * the top of the trackers stack.
+	 *
+	 * pushTracker and popTracker are called before and after a reactor's
+	 * invocation respectively.
+	 *
+	 * track() is invoked whenever a reactor's state is retreived.
 	 */
-	static wipeTracks() {
-		let tracked = this.tracked
-		delete this.tracked
-		return tracked
+	static trackers = []
+	static pushTracker() {
+		this.trackers.push([])
+	}
+	static popTracker() {
+		return this.trackers.pop()
+	}
+	static track(reactor) {
+		if (Reactor.trackers.length) {
+			this.trackers[this.trackers.length - 1].push(reactor)
+		}
 	}
 
 	/**
@@ -45,14 +59,12 @@ export default class Reactor {
 
 	/**
 	 * Retreives the reactor's state while
-	 * updating the tracked reactor set.
+	 * updating the trackers reactor set.
 	 *
 	 * @return {any} – The current state of the reactor.
 	 */
 	retrieve() {
-		if (Reactor.tracked) {
-			Reactor.tracked.push(this)
-		}
+		Reactor.track(this)
 
 		return this._state
 	}
@@ -68,8 +80,8 @@ export default class Reactor {
 		// by removing itself as a descendant for each of it's ancestors.
 		this.ancestors.forEach(ancestor => ancestor.removeDescendant(this))
 
-		// Reset the tracked reactor set
-		Reactor.tracked = []
+		// Add a new tracker to the trackers stack for this reactor
+		Reactor.pushTracker()
 
 		// Execute expression and update the internal state
 		this._state =
@@ -77,8 +89,8 @@ export default class Reactor {
 				? this.expression()
 				: this.expression
 
-		// Set its ancestors from the tracked reactors
-		this.ancestors = Reactor.wipeTracks()
+		// Set its ancestors to the latest tracker in the stack
+		this.ancestors = Reactor.popTracker()
 
 		// Invoke the each reactor's descendant update method.
 		// This allows the change to propagate through the graph.
